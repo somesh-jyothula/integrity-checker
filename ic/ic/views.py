@@ -17,7 +17,7 @@ import requests
 import time
 from django.core.management import call_command
 
-VIRUSTOTAL_API_KEY = '422f61380db90160eb3608273737fdfb2fd74574b80b8bfb5fe406c2c9f347dd'
+VIRUSTOTAL_API_KEY = 'YOUR VIRUSTOTAL API KEY' #ADD YOUR VIRUSTOTAL API KEY
 
 def login(request):
     if request.method == 'POST':
