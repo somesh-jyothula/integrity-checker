@@ -1,0 +1,12 @@
+{% extends 'base.html' %} {% block content %}
+
+<head>
+    <title>Home Page</title>
+</head>
+
+<body>
+    <h1>Welcome to Integrity checker</h1>
+
+    <a href="{% url 'register' %}">Register</a>||<a href="{% url 'login' %}">Login</a>
+</body>
+{% endblock %}

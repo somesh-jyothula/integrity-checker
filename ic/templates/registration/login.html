@@ -1,0 +1,11 @@
+{% extends 'base.html' %} {% block content %}
+<div class="auth-form">
+    <div class="header">Login</div>
+    <form method="post">
+        {% csrf_token %} {{ form.as_p }}
+        <button type="submit" class="btn">Login</button>
+
+    </form>
+    <p>Don't have an account? <a href="{% url 'register' %}">Register</a></p>
+</div>
+{% endblock %}

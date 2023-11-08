@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integrity Checker</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: black;
+            color: #0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-image: url('https://wallpapercave.com/wp/9iapSjX.png');
+            background-size: cover;
+        }
+        
+        .navbar {
+            background-color: #000;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .navbar-brand,
+        .navbar-nav .nav-link {
+            color: #0f0;
+        }
+        
+        .navbar-brand {
+            font-size: 24px;
+            text-transform: uppercase;
+        }
+        
+        .container {
+            padding: 20px;
+            background-color: black;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0.5, 0.5);
+        }
+        
+        footer {
+            background-color: #000;
+            color: #0f0;
+            text-align: center;
+            padding: 10px 0;
+        }
+        
+        .auth-form {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .btn {
+            margin-top: 10px;
+            background-color: #00f;
+            color: #0f0;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            animation: blink 1s infinite;
+        }
+        
+        .header {
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .subheader {
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        
+        input[type="text"],
+        input[type="password"],
+        input[type="email"] {
+            width: 50%;
+            padding: 5px;
+            margin-bottom: 10px;
+            background-color: black;
+            color: green;
+            border: 1px solid #0f0;
+            max-width: 150px;
+            max-height: 20px;
+        }
+        
+        .register-section {
+            background-color: #008000;
+        }
+        
+        @keyframes blink {
+            0%,
+            100% {
+                opacity: 0;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <a class="navbar-brand" href="#">Integrity Checker</a>
+    </div>
+
+    <div class="container">
+        {% block content %} {% endblock %}
+    </div>
+
+    <footer>
+        <div class="navbar">
+            <a class="navbar-brand" href="#">Integrity Checker</a>
+        </div>
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,37 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+    .malware-detected {
+        background-color: red;
+        color: white;
+        padding: 10px;
+    }
+</style>
+
+<div style="text-align: center;">
+    <h1>Check URL Reputation</h1>
+
+
+    <form method="post" action="{% url 'check_url_reputation' %}">
+        {% csrf_token %}
+        <label for "url">URL to Check:</label>
+        <input type="text" name="url" required>
+        <button type="submit" class="check-reputation-button">Check Reputation</button>
+    </form>
+
+    {% if result == "Malware Detected" %}
+    <div style="text-align: center;" class="malware-detected">
+        <h2>Reputation Result:</h2>
+        <p>{{ result }}</p>
+    </div>
+    {% elif result %}
+    <div style="text-align: center;">
+        <h2>Reputation Result:</h2>
+        <p>{{ result }}</p>
+    </div>
+    {% endif %}
+
+    <div style="text-align: center;">
+        <a href="{% url 'profile' %}" class="blink">Back to Profile</a>
+    </div>
+</div>
+{% endblock %}

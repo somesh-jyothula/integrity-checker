@@ -1,0 +1,163 @@
+{% extends 'base.html' %} {% block content %}
+<style>
+    .execute-button {
+        background-color: #dc3545;
+        animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+    
+    body {
+        background-color: black;
+    }
+    
+    h1 {
+        font-size: 24px;
+        color: #05b1f5;
+    }
+    
+    .user-info {
+        background-color: black;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    
+    .upload-button {
+        background-color: #007bff;
+        color: black;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .upload-button:hover {
+        background-color: #0056b3;
+    }
+    
+    .check-reputation-button {
+        background-color: #28a745;
+        color: black;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .check-reputation-button:hover {
+        background-color: #1e7e34;
+    }
+    
+    ul {
+        list-style-type: none;
+        padding: 0;
+    }
+    
+    ul li {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: black;
+    }
+    
+    .file-action-link {
+        margin: 5px;
+        color: #007bff;
+        text-decoration: none;
+        font-weight: bold;
+        transition: color 0.3s;
+    }
+    
+    .file-action-link:hover {
+        color: #0056b3;
+    }
+    
+    .status {
+        font-weight: bold;
+        margin-top: 5px;
+    }
+    
+    .malware-detected {
+        color: red;
+    }
+    
+    .integrity-passed {
+        color: green;
+    }
+    
+    .integrity-failed {
+        color: red;
+    }
+    
+    .logout-link {
+        margin-top: 20px;
+        color: #dc3545;
+        text-decoration: none;
+        font-weight: bold;
+        transition: color 0.3s;
+    }
+    
+    .logout-link:hover {
+        color: #a71d2a;
+    }
+</style>
+
+<div style="text-align: center;">
+    <h1>Welcome, {{ user.username }}</h1>
+    <div class="user-info">
+        <p>Email: {{ user.email }}</p>
+
+        <form method="post" action="{% url 'upload_file' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <label for="file" class="upload-button">Choose File</label>
+            <input type="file" name="file" id="file" style="display: none;">
+            <button type="submit" class="upload-button">Upload File</button>
+        </form>
+        <form method="get" action="{% url 'check_url_reputation' %}"><br>
+            <button type="submit" class="check-reputation-button">Check URL Reputation</button>
+        </form><br>
+        <form method="post" action="{% url 'execute_scan_for_malware' %}">
+            {% csrf_token %}
+            <button type="submit" class="execute-button" id="scan-result-button">Execute Malware Scan</button>
+        </form>
+
+        <div id="scan-result-message"></div>
+    </div>
+</div>
+
+
+<h2 style="text-align: center;">Uploaded Files:</h2>
+<ul>
+    {% for file in uploaded_files %}
+    <li>
+        <span>{{ forloop.counter }}.</span> <span>{{ file.file.name }}</span><br> {% if file.malware_detected %}
+        <span class="malware-detected status">Malware Detected</span> <br>{% else %}
+        <span class="integrity-passed status">No Malware Detected</span> <br>{% endif %}
+        <div>
+            <a href="{% url 'check_malware' file_id=file.id %}" class="file-action-link">Check for Malware</a>
+            <a href="{% url 'check_integrity' file_id=file.id %}" class="file-action-link">Check Integrity</a> {% if file.status == 'INTEGRITY_CHECK_PASSED' %}
+            <span class="integrity-passed status">Integrity Passed</span> {% elif file.status == 'MODIFIED' %}
+            <span class="integrity-failed status">Integrity Failed</span> {% endif %}
+
+        </div>
+
+    </li>
+    {% endfor %}
+</ul>
+<div style="text-align: center;">
+    <a href="{% url 'logout' %}" class="logout-link">Logout</a>
+</div>
+{% endblock %}
