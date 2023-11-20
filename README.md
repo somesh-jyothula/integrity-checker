@@ -50,4 +50,4 @@ To run this project locally, follow these steps:
 
 
 ## Visit http://127.0.0.1:8000/ in your web browser to access the Integrity Checker.
-
+## Note: Add your virustotal api key in views.py file.
