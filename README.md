@@ -1,7 +1,7 @@
 
 # Integrity Checker
 
-Integrity Checker is a web application that allows users to upload files and calculate their integrity using MD5 hash algorithms. It can be used to verify the integrity and authenticity of files.
+Integrity Checker is a web application that allows users to upload files and calculate their integrity using MD5 hash algorithms. It can be used to verify the integrity and authenticity of files.Also checks for malware by uploaded,directory and URL's.
 
 ## Features
 
