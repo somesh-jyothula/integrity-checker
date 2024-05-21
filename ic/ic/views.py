@@ -2,22 +2,16 @@ import hashlib
 import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import logout
-from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
 from django.contrib import messages
-from .forms import FileUploadForm, CustomRegistrationForm, DirectoryScanForm
+from .forms import FileUploadForm, CustomRegistrationForm
 from .models import UploadedFile, SuspiciousActivity
-from django.contrib.auth.models import User
 from django.utils import timezone
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.forms import AuthenticationForm
-from django.shortcuts import render, redirect
 import requests
 import time
-from django.core.management import call_command
 
-VIRUSTOTAL_API_KEY = 'YOUR VIRUSTOTAL API KEY' #ADD YOUR VIRUSTOTAL API KEY
+VIRUSTOTAL_API_KEY = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'  # Replace with your VirusTotal API key
 
 def login(request):
     if request.method == 'POST':
@@ -31,7 +25,7 @@ def login(request):
 
 def user_logout(request):
     auth_logout(request)
-    return redirect("profile")
+    return redirect("home")
 
 def home(request):
     return render(request, 'home.html')
@@ -70,15 +64,20 @@ def upload_file(request):
             file_content = uploaded_file.file.read()
             checksum = hashlib.md5(file_content).hexdigest()
             uploaded_file.checksum = checksum
+            uploaded_file.file.seek(0)  # Reset file pointer to the beginning
+
             is_first_upload = not UploadedFile.objects.filter(user=request.user, checksum=checksum).exists()
             if is_first_upload:
                 messages.success(request, "Your file is uploaded for the first time.")
             else:
                 messages.success(request, "Your file has been uploaded successfully.")
+
             virustotal_api_url = 'https://www.virustotal.com/vtapi/v2/file/scan'
             params = {'apikey': VIRUSTOTAL_API_KEY}
             files = {'file': (uploaded_file.file.name, file_content)}
             response = requests.post(virustotal_api_url, params=params, files=files)
+            uploaded_file.file.seek(0)  # Reset file pointer to the beginning again
+
             if response.status_code == 200:
                 json_response = response.json()
                 if json_response.get('response_code') == 1:
@@ -205,78 +204,86 @@ def check_url_reputation(request):
             error_message = "Please enter a URL to check"
     return render(request, 'check_url_reputation.html', {'result': result, 'error_message': error_message})
 
-from .forms import DirectoryScanForm
-
+@login_required
 def execute_scan_for_malware(request):
     if request.method == 'POST':
-        form = DirectoryScanForm(request.POST)
+        form = FileUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            directory_path = form.cleaned_data['directory_path']
-            files = [os.path.join(directory_path, filename) for filename in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, filename))]
-            if not files:
-                message = "No files found in the specified directory."
-                scan_results = []
+            uploaded_files = request.FILES.getlist('file')
+            virus_total_results = {}
+
+            temp_folder = 'temp_files'
+            os.makedirs(temp_folder, exist_ok=True)
+
+            try:
+                for uploaded_file in uploaded_files:
+                    file_path = os.path.join(temp_folder, uploaded_file.name)
+                    with open(file_path, 'wb') as f:
+                        for chunk in uploaded_file.chunks():
+                            f.write(chunk)
+                    scan_result = scan_file_with_virustotal(file_path)
+                    if scan_result:
+                        virus_total_results[uploaded_file.name] = {
+                            'positives': scan_result['data']['attributes'].get('last_analysis_stats', {}).get('malicious', 0),
+                            'total': sum(scan_result['data']['attributes'].get('last_analysis_stats', {}).values()),
+                            'permalink': scan_result['data']['links'].get('self', '#')
+                        }
+            except Exception as e:
+                print(f'Error occurred during file upload or scanning: {e}')
+                messages.error(request, "An error occurred during file upload or scanning.")
+                return render(request, 'execute_scan_for_malware.html', {'form': form})
+
+            if virus_total_results:
+                messages.success(request, "File upload and scanning completed.")
+                context = {'form': form, 'virus_total_results': virus_total_results}
+                return render(request, 'execute_scan_for_malware.html', context)
             else:
-                malware_found = False
-                scan_results = []
-                for file in files:
-                    try:
-                        virustotal_url = 'https://www.virustotal.com/vtapi/v2/file/scan'
-                        params = {'apikey': VIRUSTOTAL_API_KEY}
-                        files = {'file': (os.path.basename(file), open(file, 'rb'))}
-                        response = requests.post(virustotal_url, params=params, files=files)
-                        if response.status_code == 200:
-                            json_response = response.json()
-                            if json_response.get('response_code') == 1:
-                                scan_id = json_response.get('scan_id')
-                                scan_results.append({
-                                    'file_name': os.path.basename(file),
-                                    'scan_id': scan_id,
-                                })
-                                scan_details = poll_virustotal_scan(scan_id)
-                                if scan_details and scan_details.get('positives', 0) > 0:
-                                    malware_found = True
-                                    scanned_file = os.path.basename(file)
-                                else:
-                                    message = "Error with file submission to VirusTotal."
-                            else:
-                                message = "Failed to submit file for scanning."
-                    except Exception as e:
-                        message = f"Error during file submission: {str(e)}"
-                if malware_found:
-                    SuspiciousActivity.objects.create(
-                        user=request.user,
-                        event_type='MALWARE_DETECTION',
-                        details=f"Malware detected in files within the directory: {directory_path}",
-                        timestamp=timezone.now()
-                    )
-                if scan_results:
-                    message = "Malware scan completed successfully."
-                else:
-                    message = "No files found for scanning."
+                messages.info(request, "No files were uploaded or scanned.")
         else:
-            message = "Invalid input. Please provide a valid directory path."
-            scan_results = []
+            messages.error(request, "Invalid form submission.")
     else:
-        form = DirectoryScanForm()
-        message = ""
-        scan_results = []
-    infected_files = [result['file_name'] for result in scan_results if result.get('positives', 0) > 0]
-    return render(request, 'execute_scan_for_malware.html', {
-        'form': form,
-        'message': message,
-        'scanned_file': scanned_file if 'scanned_file' in locals() else None,
-        'scan_results': scan_results,
-        'infected_files': infected_files,
-    })
+        form = FileUploadForm()
+
+    return render(request, 'execute_scan_for_malware.html', {'form': form})
+
 
 @login_required
 def get_scan_report(request, scan_id):
     virustotal_url = 'https://www.virustotal.com/vtapi/v2/file/report'
     params = {'apikey': VIRUSTOTAL_API_KEY, 'resource': scan_id}
-    response = requests.get(virustotal_url, params=params)
+    headers = {'x-apikey': VIRUSTOTAL_API_KEY}
+    response = requests.get(virustotal_url, params=params, headers=headers)
     if response.status_code == 200:
         json_response = response.json()
         return render(request, 'scan_report.html', {'report': json_response})
     else:
         return render(request, 'scan_report.html', {'error': 'Failed to retrieve the scan report from VirusTotal.'})
+
+
+def scan_file_with_virustotal(file_path):
+    with open(file_path, 'rb') as f:
+        file_hash = hashlib.sha256(f.read()).hexdigest()
+
+    url = f'https://www.virustotal.com/api/v3/files/{file_hash}'
+    headers = {'x-apikey': VIRUSTOTAL_API_KEY}
+
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f'Error occurred during VirusTotal API request: {e}')
+        return None
+
+
+
+
+
+
+
+
+
+
+
+
+
