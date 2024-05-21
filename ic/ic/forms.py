@@ -4,6 +4,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import UploadedFile
 
+
 class CustomRegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
 
@@ -16,5 +17,6 @@ class FileUploadForm(forms.ModelForm):
         model = UploadedFile
         fields = ['file']
 
+
 class DirectoryScanForm(forms.Form):
-    directory_path = forms.CharField(label="Directory Path", max_length=100)
+    directory = forms.CharField(max_length=255, label='Directory Path')
